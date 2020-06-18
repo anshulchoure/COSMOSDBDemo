@@ -55,11 +55,20 @@ namespace Contacts2TableCosmosMVC.Models.Concrete
 
     private List<Contact> SetContactsList(List<ContactTable> contactTableList)
     {
-      return null;
+      List<Contact> contactList = new List<Contact>();
+      foreach (ContactTable contactTable in contactTableList)
+      {
+        contactList.Add(SetContactObject(contactTable));
+      }
+      return contactList;
     }
     public async Task<Contact> CreateAsync(Contact contact)
     {
-      return null;
+      ContactTable contactTable = SetContactTableObject(contact);
+      TableOperation insertOperation = TableOperation.Insert(contactTable);
+      TableResult result = await _cloudTable.ExecuteAsync(insertOperation);
+      ContactTable insertedRecord = result.Result as ContactTable;
+      return SetContactObject(insertedRecord);
     }
 
     public async Task DeleteAsync(string id, string contactName, string phone)
@@ -89,7 +98,10 @@ namespace Contacts2TableCosmosMVC.Models.Concrete
 
     public async Task<List<Contact>> GetAllContactsAsync()
     {
-      return null;
+      TableQuery<ContactTable> tableQuery = new TableQuery<ContactTable>();
+      TableContinuationToken tcToken = null;
+      var result = await _cloudTable.ExecuteQuerySegmentedAsync(tableQuery, tcToken);
+      return SetContactsList(result.Results);
     }
 
     public async Task<Contact> UpdateAsync(Contact contact)
