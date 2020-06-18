@@ -45,40 +45,72 @@ namespace Contacts2TableCosmosMVC.Models.Concrete
 
     private async Task<List<Contact>> GetContacts(string sqlQuery)
     {
+      QueryDefinition query = new QueryDefinition(sqlQuery);
+      FeedIterator<Contact> iterator = _container.GetItemQueryIterator<Contact>(query);
+      List<Contact> contacts = new List<Contact>();
+
+      while (iterator.HasMoreResults)
+      {
+        FeedResponse<Contact> response = await iterator.ReadNextAsync();
+        foreach (var item in response)
+        {
+          contacts.Add(item);
+        }
+        return contacts;
+      }
       return null;
     }
     public async Task<Contact> CreateAsync(Contact contact)
     {
-      return null;
+      contact.Id = Guid.NewGuid().ToString();
+      ItemResponse<Contact> contactResponse = await _container.CreateItemAsync<Contact>(contact);
+      if (contactResponse != null)
+      {
+        return contact;
+      }
+      else
+      {
+        return null;
+      }
     }
 
     public async Task DeleteAsync(string id, string contactName, string phone)
     {
-
+      ItemResponse<Contact> contactResponse = await _container.DeleteItemAsync<Contact>(id, new PartitionKey(contactName));
     }
     public async Task<Contact> FindContactAsync(string id)
     {
-      return null;
+      var sqlQuery = $"select * from c where c.id='{id}'";
+      var contactList = await GetContacts(sqlQuery);
+      return contactList[0];
     }
 
     public async Task<List<Contact>> FindContactByPhoneAsync(string phone)
     {
-      return null;
+      var sqlQuery = $"select * from c where c.phone='{phone}'";
+      var contactList = await GetContacts(sqlQuery);
+      return contactList;
     }
 
     public async Task<List<Contact>> FindContactCPAsync(string contactName, string phone)
     {
-      return null;
+      var sqlQuery = $"select * from c where c.contactName='{contactName}' and  c.phone='{phone}'";
+      var contactList = await GetContacts(sqlQuery);
+      return contactList;
     }
 
     public async Task<List<Contact>> FindContactsByContactNameAsync(string contactName)
     {
-      return null;
+      var sqlQuery = $"select * from c where c.contactName='{contactName}'";
+      var contactList = await GetContacts(sqlQuery);
+      return contactList;
     }
 
     public async Task<List<Contact>> GetAllContactsAsync()
     {
-      return null;
+      var sqlQuery = $"select * from c";
+      var contactList = await GetContacts(sqlQuery);
+      return contactList;
     }
 
     public async Task<Contact> UpdateAsync(Contact contact)
