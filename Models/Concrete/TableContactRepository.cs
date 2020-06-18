@@ -73,27 +73,53 @@ namespace Contacts2TableCosmosMVC.Models.Concrete
 
     public async Task DeleteAsync(string id, string contactName, string phone)
     {
-
+      var partitionKey = contactName;
+      var rowKey = phone;
+      TableOperation retrieveOperation = TableOperation.Retrieve(partitionKey, rowKey);
+      TableResult tableResult = await _cloudTable.ExecuteAsync(retrieveOperation);
+      var contactTable = tableResult.Result as ContactTable;
+      if (contactTable != null)
+      {
+        TableOperation deleteOperation = TableOperation.Delete(contactTable);
+        var updateResult = await _cloudTable.ExecuteAsync(deleteOperation);
+      }
     }
 
     public async Task<Contact> FindContactAsync(string id)
     {
-      return null;
+      TableQuery<ContactTable> query = new TableQuery<ContactTable>().Where(TableQuery.GenerateFilterCondition("Id", QueryComparisons.Equal, id));
+      TableContinuationToken tcToken = null;
+      var contactTableResult = await _cloudTable.ExecuteQuerySegmentedAsync(query, tcToken);
+      return SetContactObject(contactTableResult.Results[0]);
     }
 
     public async Task<List<Contact>> FindContactByPhoneAsync(string phone)
     {
-      return null;
+      var rowKey = phone;
+      TableQuery<ContactTable> query = new TableQuery<ContactTable>().Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, rowKey));
+      TableContinuationToken tcToken = null;
+      var contactTableResult = await _cloudTable.ExecuteQuerySegmentedAsync(query, tcToken);
+      return SetContactsList(contactTableResult.Results);
     }
 
     public async Task<List<Contact>> FindContactCPAsync(string contactName, string phone)
     {
-      return null;
+      var partitionKey = contactName;
+      var rowKey = phone;
+      TableOperation tableOperation = TableOperation.Retrieve<ContactTable>(partitionKey, rowKey);
+      TableResult tableResult = await _cloudTable.ExecuteAsync(tableOperation);
+      var contactTable = tableResult.Result as ContactTable;
+      var contact = SetContactObject(contactTable);
+      return new List<Contact> { contact };
     }
 
     public async Task<List<Contact>> FindContactsByContactNameAsync(string contactName)
     {
-      return null;
+      var partitionKey = contactName;
+      TableQuery<ContactTable> query = new TableQuery<ContactTable>().Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey));
+      TableContinuationToken tcToken = null;
+      var contactTableResult = await _cloudTable.ExecuteQuerySegmentedAsync(query, tcToken);
+      return SetContactsList(contactTableResult.Results);
     }
 
     public async Task<List<Contact>> GetAllContactsAsync()
